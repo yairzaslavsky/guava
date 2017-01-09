@@ -22,8 +22,12 @@ import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import javax.annotation.Nullable;
 
 /**
@@ -105,6 +109,237 @@ public final class ObjectArrays {
     T[] result = Arrays.copyOf(array, array.length + 1);
     result[array.length] = element;
     return result;
+  }
+
+  public static <T> List<T> unmodifiableList(T[] array) {
+    return new List<T>() {
+      @Override
+      public int size() {
+        return array.length;
+      }
+
+      @Override
+      public boolean isEmpty() {
+        return array.length == 0;
+      }
+
+      @Override
+      public boolean contains(Object o) {
+        for (int counter = 0; counter < array.length; counter++) {
+          if (array[counter].equals(o)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      @Override
+      public Iterator<T> iterator() {
+        return new Iterator<T>() {
+          private int currentIndex = 0;
+          @Override
+          public boolean hasNext() {
+            return currentIndex < array.length -1;
+          }
+
+          @Override
+          public T next() {
+            if (!hasNext()) {
+               throw new java.util.NoSuchElementException();
+            }
+            T result = array[currentIndex];
+            currentIndex++;
+            return result;
+          }
+        };
+      }
+
+      @Override
+      public Object[] toArray() {
+        return array;
+      }
+
+      @Override
+      public <T1> T1[] toArray(T1[] a) {
+        if (!a.getClass().getComponentType().isAssignableFrom(array.getClass().getComponentType())) {
+          throw new ArrayStoreException();
+        }
+
+        if (a.length < array.length) {
+          return (T1[]) Arrays.copyOf(array, array.length, a.getClass());
+        }
+
+        System.arraycopy(array, 0, a, 0,  array.length);
+        if (a.length > array.length)
+          a[array.length] = null;
+        return a;
+      }
+
+      @Override
+      public boolean add(T t) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public boolean remove(Object t) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public boolean containsAll(Collection<?> c) {
+        return false;
+      }
+
+      @Override
+      public boolean addAll(Collection<? extends T> c) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public boolean addAll(int index, Collection<? extends T> c) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public boolean removeAll(Collection<?> c) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public boolean retainAll(Collection<?> c) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void clear() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public T get(int index) {
+        return array[index];
+      }
+
+      @Override
+      public T set(int index, T element) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int index, T element) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public T remove(int index) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int indexOf(Object o) {
+        for (int counter = 0 ; counter < array.length ; counter++) {
+          if (array[counter].equals(o)) {
+            return counter;
+          }
+        }
+        return -1;
+      }
+
+      @Override
+      public int lastIndexOf(Object o) {
+        for (int counter = array.length-1 ; counter >= 0 ; counter--) {
+          if (array[counter].equals(o)) {
+            return counter;
+          }
+        }
+        return -1;
+      }
+
+      @Override
+      public ListIterator<T> listIterator() {
+        final int startIndex = 0;
+        return createListIterator(startIndex);
+      }
+
+      private ListIterator<T> createListIterator(final int startIndex) {
+        return  new ListIterator<T>() {
+
+          private int currentIndex = startIndex;
+
+          @Override
+          public T next() {
+            if (!hasNext()) {
+              throw new java.util.NoSuchElementException();
+            }
+            T result = array[currentIndex];
+            currentIndex++;
+            return result;
+          }
+          @Override
+          public boolean hasNext() {
+            return currentIndex <array.length -1;
+          }
+
+          @Override
+          public boolean hasPrevious() {
+            return currentIndex > startIndex;
+          }
+
+          @Override
+          public T previous() {
+            if (!hasPrevious()) {
+              throw new java.util.NoSuchElementException();
+            }
+            T result = array[currentIndex];
+            currentIndex--;
+            return result;
+          }
+
+          @Override
+          public int nextIndex() {
+            return currentIndex++;
+          }
+
+          @Override
+          public int previousIndex() {
+            return currentIndex--;
+          }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public void set(T t) {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public void add(T t) {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+
+      @Override
+      public ListIterator<T> listIterator(int index) {
+        return createListIterator(index);
+      }
+
+      @Override
+      public List<T> subList(int fromIndex, int toIndex) {
+        if ((fromIndex < 0 || toIndex > size() || fromIndex > toIndex)) {
+          throw new IndexOutOfBoundsException();
+        }
+
+        T[] newArray = (T[])Array.newInstance(array.getClass().getComponentType(), toIndex - fromIndex);
+        System.arraycopy(array, fromIndex, newArray, 0, toIndex - fromIndex);
+        return unmodifiableList(newArray);
+      }
+    };
+
+
   }
 
   /**
